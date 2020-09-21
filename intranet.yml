@@ -1,0 +1,50 @@
+---
+- name: deploy and start httpd server
+  hosts: web
+  vars: 
+    web_pkg: httpd
+    firewall_pkg: firewalld
+    web_service: httpd
+    firewall_service: firewalld
+    rule: http
+  tasks:
+    - name: Install package
+      yum:
+        name: 
+          - "{{ web_pkg }}"
+          - "{{ firewall_pkg }}"
+        state: latest
+
+    - name: start and enable firewall service
+      service:
+        name: "{{ firewall_pkg }}"
+        state: started
+        enabled: true
+
+    - name: start and enable web service
+      service:
+        name: "{{ web_pkg }}"
+        state: started
+        enabled: true
+
+    - name: push file to manage host
+      copy:
+        src: ../files/index.html
+        dest: /var/www/html/index.html
+
+    - name: firewall port open rule
+      firewalld:
+        service: "{{ rule }}"
+        permanent: true
+        immediate: true
+        state: enabled
+
+- name: verify the apache web service up and running
+  hosts: localhost
+  become: false
+  tasks: 
+    - name: Ensure webserver reachable 
+      uri:
+        url: http://10.150.0.3
+        status_code: 200
+...
